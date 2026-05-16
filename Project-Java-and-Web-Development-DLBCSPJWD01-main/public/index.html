@@ -74,11 +74,55 @@
     </div>
 
     <div class="stage-controls">
-      <button id="startButton" type="button">Start</button>
-      <button id="restartButton" type="button">Restart</button>
+      <div class="stage-actions">
+        <button id="startButton" type="button">Start</button>
+        <button id="restartButton" type="button">Restart</button>
+      </div>
       <p id="controlHint">Use keyboard controls to play.</p>
     </div>
+
+    <div class="touch-controls" aria-label="Touch game controls">
+      <button type="button" data-control="up" aria-label="Move up">Up</button>
+      <button type="button" data-control="left" aria-label="Move left">Left</button>
+      <button type="button" data-control="down" aria-label="Move down">Down</button>
+      <button type="button" data-control="right" aria-label="Move right">Right</button>
+    </div>
   </section>
+
+  <aside class="music-player" aria-label="Lofi music player">
+    <img id="trackCover" src="assets/covers/rainy-save-room.svg" alt="Current album cover">
+    <div class="track-info">
+      <strong id="trackTitle">Loading track</strong>
+      <span id="trackArtist">Lofi Arcade</span>
+    </div>
+    <div class="music-controls">
+      <button id="rewindTrack" type="button" aria-label="Previous track">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M19 20 9 12l10-8v16Z"></path>
+          <path d="M7 19V5"></path>
+        </svg>
+      </button>
+      <button id="toggleMusic" type="button" aria-label="Play or pause music">
+        <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m8 5 11 7-11 7V5Z"></path>
+        </svg>
+        <svg class="pause-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M8 5v14"></path>
+          <path d="M16 5v14"></path>
+        </svg>
+      </button>
+      <button id="skipTrack" type="button" aria-label="Next track">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m5 4 10 8-10 8V4Z"></path>
+          <path d="M17 5v14"></path>
+        </svg>
+      </button>
+      <label class="volume-control" for="volumeSlider">
+        <span>Volume</span>
+        <input id="volumeSlider" type="range" min="0" max="1" value="0.45" step="0.01">
+      </label>
+    </div>
+  </aside>
 
   <script src="js/app.js"></script>
 </body>

@@ -1,0 +1,49 @@
+{
+  "tracks": [
+    {
+      "id": "rainy-save-room",
+      "title": "Rainy Save Room",
+      "artist": "Lofi Arcade",
+      "album": "After Credits",
+      "cover": "/assets/covers/rainy-save-room.svg",
+      "bpm": 78,
+      "progression": [
+        ["C3", "E3", "G3", "B3"],
+        ["A2", "C3", "E3", "G3"],
+        ["F2", "A2", "C3", "E3"],
+        ["G2", "B2", "D3", "F3"]
+      ],
+      "melody": ["E4", "G4", "B4", "G4", "D4", "E4", "C4", "B3"]
+    },
+    {
+      "id": "neon-study-break",
+      "title": "Neon Study Break",
+      "artist": "Pixel Patio",
+      "album": "Soft Reset",
+      "cover": "/assets/covers/neon-study-break.svg",
+      "bpm": 84,
+      "progression": [
+        ["D3", "F3", "A3", "C4"],
+        ["G2", "B2", "D3", "F3"],
+        ["C3", "E3", "G3", "B3"],
+        ["A2", "C3", "E3", "G3"]
+      ],
+      "melody": ["A4", "F4", "E4", "D4", "G4", "E4", "C4", "D4"]
+    },
+    {
+      "id": "midnight-token",
+      "title": "Midnight Token",
+      "artist": "Cassette Menu",
+      "album": "Pocket Glow",
+      "cover": "/assets/covers/midnight-token.svg",
+      "bpm": 72,
+      "progression": [
+        ["E3", "G3", "B3", "D4"],
+        ["C3", "E3", "G3", "B3"],
+        ["A2", "C3", "E3", "G3"],
+        ["B2", "D3", "F3", "A3"]
+      ],
+      "melody": ["G4", "B4", "D5", "B4", "A4", "G4", "E4", "D4"]
+    }
+  ]
+}

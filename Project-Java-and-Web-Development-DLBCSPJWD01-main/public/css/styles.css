@@ -31,11 +31,16 @@ button {
   font: inherit;
 }
 
+button,
+canvas {
+  touch-action: none;
+}
+
 .app-shell {
-  width: min(1180px, calc(100% - 32px));
+  width: min(1180px, calc(100% - clamp(28px, 5vw, 64px)));
   min-height: 100vh;
   margin: 0 auto;
-  padding: 34px 0;
+  padding: clamp(22px, 4vw, 42px) 0 calc(118px + clamp(22px, 4vw, 42px));
 }
 
 .site-header {
@@ -96,12 +101,12 @@ h2 {
 
 .arcade-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: clamp(14px, 2vw, 22px);
 }
 
 .game-card {
-  min-height: 480px;
+  min-height: clamp(300px, 48vw, 480px);
 }
 
 .card-launch {
@@ -109,8 +114,8 @@ h2 {
   display: flex;
   width: 100%;
   height: 100%;
-  min-height: 480px;
-  padding: 28px;
+  min-height: clamp(300px, 48vw, 480px);
+  padding: clamp(20px, 3vw, 30px);
   overflow: hidden;
   border: 2px solid rgba(39, 33, 45, 0.16);
   border-radius: 8px;
@@ -179,7 +184,7 @@ h2 {
   display: block;
   margin-top: 8px;
   color: #fffaf2;
-  font-size: clamp(2.4rem, 5vw, 4.5rem);
+  font-size: clamp(2.2rem, 5vw, 4.5rem);
   font-weight: 800;
   line-height: 0.96;
 }
@@ -206,7 +211,9 @@ h2 {
   inset: 0;
   z-index: 10;
   display: none;
-  padding: 22px;
+  min-height: 100dvh;
+  padding: clamp(12px, 2.4vw, 22px) clamp(12px, 2.4vw, 22px) 112px;
+  overflow: auto;
   background:
     linear-gradient(120deg, rgba(92, 66, 109, 0.88), rgba(39, 33, 45, 0.94)),
     var(--ink);
@@ -215,8 +222,8 @@ h2 {
 
 .game-stage.active {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 16px;
+  grid-template-rows: auto minmax(220px, 1fr) auto;
+  gap: clamp(10px, 2vh, 16px);
 }
 
 .stage-topbar,
@@ -225,6 +232,17 @@ h2 {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+}
+
+.stage-topbar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.stage-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .back-button,
@@ -271,14 +289,16 @@ h2 {
 .canvas-wrap {
   position: relative;
   display: grid;
+  width: 100%;
   min-height: 0;
   place-items: center;
 }
 
 canvas {
   display: block;
-  width: min(100%, calc((100vh - 178px) * 1.777));
-  max-height: calc(100vh - 178px);
+  width: min(100%, calc((100dvh - 190px) * 1.777));
+  max-width: 1120px;
+  max-height: calc(100dvh - 190px);
   aspect-ratio: 16 / 9;
   border: 2px solid rgba(255, 250, 242, 0.2);
   border-radius: 8px;
@@ -307,44 +327,330 @@ canvas {
 }
 
 #controlHint {
+  max-width: 46rem;
   margin: 0;
   color: rgba(255, 250, 242, 0.76);
   font-family: "Space Mono", monospace;
   font-size: 0.9rem;
+  line-height: 1.45;
   text-align: right;
 }
 
-@media (max-width: 880px) {
-  .arcade-grid {
-    grid-template-columns: 1fr;
+.touch-controls {
+  display: none;
+}
+
+.music-player {
+  position: fixed;
+  right: clamp(12px, 3vw, 28px);
+  bottom: clamp(12px, 3vw, 22px);
+  left: clamp(12px, 3vw, 28px);
+  z-index: 30;
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 12px;
+  border: 1px solid rgba(255, 250, 242, 0.42);
+  border-radius: 8px;
+  background: rgba(39, 33, 45, 0.88);
+  box-shadow: 0 20px 70px rgba(39, 33, 45, 0.28);
+  color: #fffaf2;
+  backdrop-filter: blur(16px);
+}
+
+.music-player img {
+  width: 64px;
+  height: 64px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.track-info {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.track-info strong,
+.track-info span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track-info strong {
+  font-size: 1rem;
+}
+
+.track-info span {
+  color: rgba(255, 250, 242, 0.72);
+  font-family: "Space Mono", monospace;
+  font-size: 0.78rem;
+}
+
+.music-controls {
+  display: grid;
+  grid-template-columns: repeat(3, 44px) minmax(120px, 180px);
+  align-items: center;
+  gap: 8px;
+}
+
+.music-controls button {
+  display: grid;
+  width: 44px;
+  height: 42px;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  border-radius: 8px;
+  background: #fff7ed;
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 800;
+  place-items: center;
+}
+
+.music-controls button:hover {
+  background: var(--mint);
+}
+
+.music-controls svg {
+  width: 21px;
+  height: 21px;
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+.music-controls button.is-playing .play-icon,
+.music-controls button:not(.is-playing) .pause-icon {
+  display: none;
+}
+
+.volume-control {
+  display: grid;
+  gap: 4px;
+  color: rgba(255, 250, 242, 0.72);
+  font-family: "Space Mono", monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.volume-control input {
+  width: 100%;
+  accent-color: var(--mint);
+  cursor: pointer;
+}
+
+@media (max-width: 980px) {
+  h1 {
+    font-size: clamp(3rem, 12vw, 6rem);
   }
 
   .game-card,
   .card-launch {
-    min-height: 280px;
+    min-height: 320px;
   }
+}
 
+@media (max-width: 720px) {
   .site-header,
-  .stage-topbar,
   .stage-controls {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .site-header {
+    margin-bottom: 18px;
   }
 
   .header-panel {
     width: fit-content;
   }
 
-  .game-stage {
-    padding: 14px;
+  .stage-topbar {
+    grid-template-columns: 1fr auto;
+    align-items: start;
+  }
+
+  .back-button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .stage-scores {
+    align-self: start;
+  }
+
+  .stage-controls {
+    gap: 10px;
+  }
+
+  .stage-actions,
+  .stage-actions button {
+    width: 100%;
+  }
+
+  .stage-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   canvas {
     width: 100%;
-    max-height: none;
+    max-height: 46dvh;
   }
 
   #controlHint {
     text-align: left;
+  }
+
+  .touch-controls {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 58px));
+    grid-template-areas:
+      ". up ."
+      "left down right";
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .touch-controls button {
+    min-height: 48px;
+    border: 1px solid rgba(255, 250, 242, 0.22);
+    border-radius: 8px;
+    background: rgba(255, 250, 242, 0.12);
+    color: #fffaf2;
+    cursor: pointer;
+    font-family: "Space Mono", monospace;
+    font-size: 0.76rem;
+    font-weight: 700;
+  }
+
+  .touch-controls button:active {
+    background: rgba(205, 232, 207, 0.28);
+  }
+
+  .touch-controls [data-control="up"] {
+    grid-area: up;
+  }
+
+  .touch-controls [data-control="left"] {
+    grid-area: left;
+  }
+
+  .touch-controls [data-control="down"] {
+    grid-area: down;
+  }
+
+  .touch-controls [data-control="right"] {
+    grid-area: right;
+  }
+
+  .music-player {
+    grid-template-columns: 52px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .music-player img {
+    width: 52px;
+    height: 52px;
+  }
+
+  .music-controls {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .music-controls button {
+    width: 100%;
+  }
+
+  .volume-control {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 460px) {
+  .app-shell {
+    width: min(100% - 20px, 1180px);
+  }
+
+  h1 {
+    font-size: clamp(2.65rem, 18vw, 4rem);
+  }
+
+  h2 {
+    font-size: clamp(1.65rem, 12vw, 2.4rem);
+  }
+
+  .game-card,
+  .card-launch {
+    min-height: 260px;
+  }
+
+  .game-copy {
+    font-size: 0.95rem;
+  }
+
+  .score-chip,
+  .stage-scores span {
+    width: 100%;
+    font-size: 0.82rem;
+  }
+
+  .stage-topbar {
+    grid-template-columns: 1fr;
+  }
+
+  .stage-scores {
+    justify-content: stretch;
+  }
+
+  canvas {
+    max-height: 40dvh;
+  }
+
+  .music-player {
+    padding: 10px;
+  }
+
+  .track-info strong {
+    font-size: 0.92rem;
+  }
+
+  .music-controls button {
+    min-height: 40px;
+  }
+}
+
+@media (max-height: 620px) and (orientation: landscape) {
+  .game-stage.active {
+    grid-template-rows: auto minmax(180px, 1fr) auto;
+  }
+
+  h2 {
+    font-size: clamp(1.5rem, 5vw, 2.4rem);
+  }
+
+  .eyebrow {
+    margin-bottom: 4px;
+  }
+
+  .stage-topbar,
+  .stage-controls {
+    gap: 10px;
+  }
+
+  canvas {
+    width: min(100%, calc((100dvh - 146px) * 1.777));
+    max-height: calc(100dvh - 146px);
   }
 }

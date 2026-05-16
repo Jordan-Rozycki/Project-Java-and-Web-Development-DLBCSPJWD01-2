@@ -13,6 +13,14 @@ const gameMessage = document.querySelector("#gameMessage");
 const messageTitle = document.querySelector("#messageTitle");
 const messageBody = document.querySelector("#messageBody");
 const highScoreLabels = document.querySelectorAll("[data-high-score]");
+const touchButtons = document.querySelectorAll("[data-control]");
+const trackCover = document.querySelector("#trackCover");
+const trackTitle = document.querySelector("#trackTitle");
+const trackArtist = document.querySelector("#trackArtist");
+const rewindTrack = document.querySelector("#rewindTrack");
+const toggleMusic = document.querySelector("#toggleMusic");
+const skipTrack = document.querySelector("#skipTrack");
+const volumeSlider = document.querySelector("#volumeSlider");
 
 const gameMeta = {
   pong: {
@@ -41,6 +49,42 @@ let highScores = {
 let activeGame = null;
 let animationFrame = null;
 let keys = {};
+let musicTracks = [];
+let currentTrackIndex = 0;
+let audioContext = null;
+let musicTimer = null;
+let musicStep = 0;
+let musicPlaying = false;
+let masterGain = null;
+let delayNode = null;
+let delayFeedback = null;
+
+const touchKeyMap = {
+  up: "ArrowUp",
+  down: "ArrowDown",
+  left: "ArrowLeft",
+  right: "ArrowRight"
+};
+
+const noteOffsets = {
+  C: -9,
+  "C#": -8,
+  Db: -8,
+  D: -7,
+  "D#": -6,
+  Eb: -6,
+  E: -5,
+  F: -4,
+  "F#": -3,
+  Gb: -3,
+  G: -2,
+  "G#": -1,
+  Ab: -1,
+  A: 0,
+  "A#": 1,
+  Bb: 1,
+  B: 2
+};
 
 async function loadHighScores() {
   try {
@@ -49,6 +93,19 @@ async function loadHighScores() {
     renderHighScores();
   } catch (error) {
     console.warn("High scores could not be loaded.", error);
+  }
+}
+
+async function loadMusicTracks() {
+  try {
+    const response = await fetch("/api/music/tracks");
+    const playlist = await response.json();
+    musicTracks = playlist.tracks || [];
+    renderTrack();
+  } catch (error) {
+    console.warn("Music tracks could not be loaded.", error);
+    trackTitle.textContent = "Music unavailable";
+    trackArtist.textContent = "Try refreshing the page";
   }
 }
 
@@ -76,6 +133,197 @@ function renderHighScores() {
     const game = label.dataset.highScore;
     label.textContent = highScores[game] || 0;
   });
+}
+
+function currentTrack() {
+  return musicTracks[currentTrackIndex];
+}
+
+function renderTrack() {
+  const track = currentTrack();
+  if (!track) {
+    return;
+  }
+
+  trackCover.src = track.cover;
+  trackCover.alt = `${track.album} album cover`;
+  trackTitle.textContent = track.title;
+  trackArtist.textContent = `${track.artist} - ${track.album}`;
+}
+
+function noteToFrequency(note) {
+  const match = /^([A-G][b#]?)(-?\d)$/.exec(note);
+  if (!match) {
+    return 440;
+  }
+
+  const [, pitch, octave] = match;
+  const semitonesFromA4 = noteOffsets[pitch] + (Number(octave) - 4) * 12;
+  return 440 * 2 ** (semitonesFromA4 / 12);
+}
+
+function ensureAudioContext() {
+  if (audioContext) {
+    return;
+  }
+
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  audioContext = new AudioContextClass();
+  masterGain = audioContext.createGain();
+  delayNode = audioContext.createDelay();
+  delayFeedback = audioContext.createGain();
+
+  masterGain.gain.value = Number(volumeSlider.value);
+  delayNode.delayTime.value = 0.24;
+  delayFeedback.gain.value = 0.22;
+
+  delayNode.connect(delayFeedback);
+  delayFeedback.connect(delayNode);
+  delayNode.connect(masterGain);
+  masterGain.connect(audioContext.destination);
+}
+
+function playTone(frequency, startTime, duration, options = {}) {
+  const oscillator = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  const filter = audioContext.createBiquadFilter();
+
+  oscillator.type = options.type || "sine";
+  oscillator.frequency.setValueAtTime(frequency, startTime);
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(options.filter || 1600, startTime);
+  gain.gain.setValueAtTime(0.0001, startTime);
+  gain.gain.exponentialRampToValueAtTime(options.volume || 0.12, startTime + 0.03);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+  oscillator.connect(filter);
+  filter.connect(gain);
+  gain.connect(masterGain);
+  gain.connect(delayNode);
+  oscillator.start(startTime);
+  oscillator.stop(startTime + duration + 0.05);
+}
+
+function playNoise(startTime, duration) {
+  const bufferSize = audioContext.sampleRate * duration;
+  const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+  const output = buffer.getChannelData(0);
+
+  for (let i = 0; i < bufferSize; i += 1) {
+    output[i] = (Math.random() * 2 - 1) * 0.22;
+  }
+
+  const source = audioContext.createBufferSource();
+  const gain = audioContext.createGain();
+  const filter = audioContext.createBiquadFilter();
+
+  filter.type = "lowpass";
+  filter.frequency.value = 900;
+  gain.gain.setValueAtTime(0.0001, startTime);
+  gain.gain.exponentialRampToValueAtTime(0.05, startTime + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+  source.buffer = buffer;
+  source.connect(filter);
+  filter.connect(gain);
+  gain.connect(masterGain);
+  source.start(startTime);
+  source.stop(startTime + duration);
+}
+
+function scheduleMusicStep() {
+  const track = currentTrack();
+  if (!track || !audioContext) {
+    return;
+  }
+
+  const beat = 60 / track.bpm;
+  const now = audioContext.currentTime;
+  const chord = track.progression[Math.floor(musicStep / 8) % track.progression.length];
+  const melodyNote = track.melody[musicStep % track.melody.length];
+
+  if (musicStep % 8 === 0) {
+    chord.forEach((note, index) => {
+      playTone(noteToFrequency(note), now + index * 0.012, beat * 3.6, {
+        type: "triangle",
+        volume: 0.055,
+        filter: 950
+      });
+    });
+  }
+
+  if (musicStep % 4 === 0) {
+    playTone(noteToFrequency(chord[0]) / 2, now, beat * 1.4, {
+      type: "sine",
+      volume: 0.16,
+      filter: 500
+    });
+  }
+
+  if (musicStep % 2 === 0) {
+    playTone(noteToFrequency(melodyNote), now, beat * 0.8, {
+      type: "triangle",
+      volume: 0.08,
+      filter: 1800
+    });
+  }
+
+  if (musicStep % 4 === 2) {
+    playNoise(now, beat * 0.35);
+  }
+
+  musicStep = (musicStep + 1) % 32;
+}
+
+async function playMusic() {
+  if (!musicTracks.length) {
+    await loadMusicTracks();
+  }
+
+  if (!musicTracks.length) {
+    return;
+  }
+
+  ensureAudioContext();
+  await audioContext.resume();
+  musicPlaying = true;
+  toggleMusic.classList.add("is-playing");
+  clearInterval(musicTimer);
+  scheduleMusicStep();
+  musicTimer = setInterval(scheduleMusicStep, (60 / currentTrack().bpm) * 500);
+}
+
+function pauseMusic() {
+  musicPlaying = false;
+  toggleMusic.classList.remove("is-playing");
+  clearInterval(musicTimer);
+  musicTimer = null;
+}
+
+function changeTrack(direction) {
+  if (!musicTracks.length) {
+    return;
+  }
+
+  currentTrackIndex = (currentTrackIndex + direction + musicTracks.length) % musicTracks.length;
+  musicStep = 0;
+  renderTrack();
+
+  if (musicPlaying) {
+    playMusic();
+  }
+}
+
+function startMusicFromFirstInteraction(event) {
+  if (event.target instanceof Element && event.target.closest(".music-player")) {
+    return;
+  }
+
+  if (!musicPlaying) {
+    playMusic();
+  }
+  window.removeEventListener("pointerdown", startMusicFromFirstInteraction);
+  window.removeEventListener("keydown", startMusicFromFirstInteraction);
 }
 
 function setScore(score) {
@@ -544,6 +792,29 @@ restartButton.addEventListener("click", () => {
   startLoop();
 });
 
+toggleMusic.addEventListener("click", () => {
+  if (musicPlaying) {
+    pauseMusic();
+    return;
+  }
+
+  playMusic();
+});
+
+skipTrack.addEventListener("click", () => {
+  changeTrack(1);
+});
+
+rewindTrack.addEventListener("click", () => {
+  changeTrack(-1);
+});
+
+volumeSlider.addEventListener("input", () => {
+  if (masterGain) {
+    masterGain.gain.value = Number(volumeSlider.value);
+  }
+});
+
 window.addEventListener("keydown", (event) => {
   keys[event.code] = true;
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(event.code)) {
@@ -555,4 +826,30 @@ window.addEventListener("keyup", (event) => {
   keys[event.code] = false;
 });
 
+touchButtons.forEach((button) => {
+  const key = touchKeyMap[button.dataset.control];
+
+  button.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    button.setPointerCapture(event.pointerId);
+    keys[key] = true;
+  });
+
+  button.addEventListener("pointerup", () => {
+    keys[key] = false;
+  });
+
+  button.addEventListener("pointercancel", () => {
+    keys[key] = false;
+  });
+
+  button.addEventListener("pointerleave", () => {
+    keys[key] = false;
+  });
+});
+
+window.addEventListener("pointerdown", startMusicFromFirstInteraction);
+window.addEventListener("keydown", startMusicFromFirstInteraction);
+
 loadHighScores();
+loadMusicTracks();

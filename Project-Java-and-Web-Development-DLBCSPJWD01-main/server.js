@@ -5,6 +5,7 @@ const path = require("path");
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, "public");
 const SCORE_FILE = path.join(__dirname, "data", "highscores.json");
+const MUSIC_FILE = path.join(__dirname, "data", "music.json");
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -37,6 +38,11 @@ async function readScores() {
 async function writeScores(scores) {
   await fs.mkdir(path.dirname(SCORE_FILE), { recursive: true });
   await fs.writeFile(SCORE_FILE, `${JSON.stringify(scores, null, 2)}\n`);
+}
+
+async function readMusic() {
+  const data = await fs.readFile(MUSIC_FILE, "utf8");
+  return { source: "procedural", ...JSON.parse(data) };
 }
 
 function sendJson(response, statusCode, payload) {
@@ -84,6 +90,15 @@ async function serveStatic(request, response) {
 }
 
 async function handleApi(request, response) {
+  if (request.url === "/api/music/tracks" && request.method === "GET") {
+    try {
+      sendJson(response, 200, await readMusic());
+    } catch (error) {
+      sendJson(response, 500, { error: "Music tracks could not be loaded." });
+    }
+    return;
+  }
+
   if (request.url === "/api/highscores" && request.method === "GET") {
     sendJson(response, 200, await readScores());
     return;
