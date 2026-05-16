@@ -1,0 +1,16 @@
+{
+  "name": "lofi-arcade",
+  "version": "1.0.0",
+  "description": "A cozy arcade website with Pong, Snake, and Brick Breaker.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "arcade",
+    "lofi",
+    "games"
+  ],
+  "author": "",
+  "license": "ISC"
+}
